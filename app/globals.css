@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Serif:wght@400;500;600&display=swap");
+
+@layer base {
+  :root {
+    --copper: #c8956c;
+    --copper-light: #daa77a;
+    --surface-0: #09090b;
+    --surface-1: #111114;
+    --grain-opacity: 0.03;
+  }
+
+  ::selection {
+    background: #c8956c40;
+    color: #fff;
+  }
+
+  body {
+    background: var(--surface-0);
+    color: #d4d4d8;
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Subtle grid-paper background */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(#c8956c05 1px, transparent 1px),
+      linear-gradient(90deg, #c8956c05 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  /* Film grain overlay */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+@layer components {
+  .label-caps {
+    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #71717a;
+  }
+
+  .data-mono {
+    font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .copper-glow {
+    box-shadow: 0 0 0 1px #c8956c10, 0 1px 2px #c8956c08;
+  }
+
+  .copper-glow-hover:hover {
+    box-shadow: 0 0 0 1px #c8956c25, 0 2px 8px #c8956c12;
+  }
+}
+
+@layer utilities {
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+  .stagger-7 { animation-delay: 0.35s; }
+  .stagger-8 { animation-delay: 0.4s; }
+}
