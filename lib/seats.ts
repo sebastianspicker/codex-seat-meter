@@ -1,6 +1,7 @@
 import { readdir, readFile, access } from "fs/promises";
 import { constants } from "fs";
 import path from "path";
+import { isAuthJson } from "@/types/seat";
 import type { AuthJson, SeatMeta } from "@/types/seat";
 
 /**
@@ -42,19 +43,24 @@ export async function listSeats(seatsDirectory: string): Promise<SeatMeta[]> {
     const filePath = path.join(base, ent.name);
     try {
       const raw = await readFile(filePath, "utf-8");
-      const auth = JSON.parse(raw) as AuthJson;
+      const parsed: unknown = JSON.parse(raw);
+      if (!isAuthJson(parsed)) {
+        results.push({
+          id,
+          error: "Invalid auth file format (expected JSON object with optional tokens)",
+        });
+        continue;
+      }
       results.push({
         id,
-        auth_mode: auth.auth_mode,
-        last_refresh: auth.last_refresh,
+        auth_mode: parsed.auth_mode,
+        last_refresh: parsed.last_refresh,
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       console.error(`Failed to read seat ${id} from ${filePath}:`, err);
       results.push({
         id,
-        auth_mode: undefined,
-        last_refresh: undefined,
         error: `Failed to parse: ${msg}`,
       });
     }
@@ -65,7 +71,7 @@ export async function listSeats(seatsDirectory: string): Promise<SeatMeta[]> {
 }
 
 /**
- * Load auth.json for a seat and return parsed AuthJson (includes tokens).
+ * Load auth.json for a seat and return validated AuthJson.
  */
 export async function loadSeatAuth(
   seatsDirectory: string,
@@ -73,5 +79,9 @@ export async function loadSeatAuth(
 ): Promise<AuthJson> {
   const filePath = getSeatAuthPath(seatsDirectory, seatId);
   const raw = await readFile(filePath, "utf-8");
-  return JSON.parse(raw) as AuthJson;
+  const parsed: unknown = JSON.parse(raw);
+  if (!isAuthJson(parsed)) {
+    throw new Error(`Invalid auth file format in ${seatId}.json`);
+  }
+  return parsed;
 }

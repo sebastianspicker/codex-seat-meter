@@ -3,7 +3,8 @@ import { getSeatsDirectory, getCodexUsageUrl } from "@/lib/config";
 import { loadSeatAuth } from "@/lib/seats";
 import { mapCodexUsageToStatusResponse } from "@/lib/usage-mapper";
 import { checkDashboardAuth } from "@/lib/auth";
-import type { SeatStatusError, CodexUsageApiResponse } from "@/types/seat";
+import { isCodexUsageApiResponse } from "@/types/seat";
+import type { SeatStatusError } from "@/types/seat";
 
 export async function GET(
   request: NextRequest,
@@ -73,7 +74,17 @@ export async function GET(
     );
   }
 
-  const text = await res.text();
+  let text: string;
+  try {
+    text = await res.text();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to read response body";
+    return NextResponse.json<SeatStatusError>(
+      { ok: false, error: message },
+      { status: 502 }
+    );
+  }
+
   if (!res.ok) {
     return NextResponse.json<SeatStatusError>(
       {
@@ -86,9 +97,9 @@ export async function GET(
     );
   }
 
-  let data: CodexUsageApiResponse;
+  let parsed: unknown;
   try {
-    data = JSON.parse(text) as CodexUsageApiResponse;
+    parsed = JSON.parse(text);
   } catch {
     return NextResponse.json<SeatStatusError>(
       { ok: false, error: "Invalid JSON from usage API" },
@@ -96,6 +107,13 @@ export async function GET(
     );
   }
 
-  const mapped = mapCodexUsageToStatusResponse(data);
+  if (!isCodexUsageApiResponse(parsed)) {
+    return NextResponse.json<SeatStatusError>(
+      { ok: false, error: "Unexpected response shape from usage API" },
+      { status: 502 }
+    );
+  }
+
+  const mapped = mapCodexUsageToStatusResponse(parsed);
   return NextResponse.json(mapped);
 }

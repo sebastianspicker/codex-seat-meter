@@ -2,11 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { BalanceCardView } from "./BalanceCard";
-import type {
-  SeatMeta,
-  SeatStatusResponse,
-  SeatStatusError,
-} from "@/types/seat";
+import { isSeatStatusOk } from "@/types/seat";
+import type { SeatMeta, SeatStatusResponse, SeatStatusError } from "@/types/seat";
 
 interface Props {
   seat: SeatMeta;
@@ -28,11 +25,21 @@ export function SeatCard({ seat, refreshKey, index }: Props) {
       const res = await fetch(
         `/api/seats/${encodeURIComponent(seat.id)}/status`
       );
-      const data = await res.json();
-      if (data.ok === true) {
-        setStatus({ state: "ok", data: data as SeatStatusResponse });
+      const data: unknown = await res.json();
+      if (isSeatStatusOk(data)) {
+        setStatus({ state: "ok", data });
       } else {
-        setStatus({ state: "error", data: data as SeatStatusError });
+        const record = data as Record<string, unknown> | null;
+        setStatus({
+          state: "error",
+          data: {
+            ok: false,
+            error:
+              typeof record?.error === "string"
+                ? record.error
+                : "Unknown error from API",
+          },
+        });
       }
     } catch (err) {
       setStatus({
@@ -66,7 +73,7 @@ export function SeatCard({ seat, refreshKey, index }: Props) {
 
   return (
     <section
-      className="animate-fade-up copper-glow copper-glow-hover group rounded-xl border border-zinc-800/60 bg-surface-1 transition-all"
+      className="animate-fade-up copper-glow copper-glow-hover group rounded-xl border border-zinc-800/60 bg-surface-1 transition-[border-color,box-shadow]"
       style={{ animationDelay: `${baseDelay}ms` }}
     >
       {/* Seat header */}
@@ -120,7 +127,7 @@ export function SeatCard({ seat, refreshKey, index }: Props) {
               type="button"
               onClick={fetchStatus}
               disabled={status.state === "loading"}
-              className="rounded border border-zinc-800 bg-surface-2 px-3 py-1 text-[0.625rem] font-medium uppercase tracking-wider text-zinc-500 transition-all hover:border-copper/30 hover:text-copper-dark disabled:opacity-30"
+              className="rounded border border-zinc-800 bg-surface-2 px-3 py-1 text-[0.625rem] font-medium uppercase tracking-wider text-zinc-500 transition-[border-color,color] hover:border-copper/30 hover:text-copper-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1 disabled:opacity-30"
             >
               {status.state === "loading" ? "\u2026" : "Refresh"}
             </button>

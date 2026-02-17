@@ -10,31 +10,30 @@ const config: Config = {
     extend: {
       colors: {
         surface: {
-          0: "#09090b",
-          1: "#111114",
-          2: "#18181c",
-          3: "#1f1f24",
+          0: "var(--surface-0)",
+          1: "var(--surface-1)",
+          2: "var(--surface-2)",
+          3: "var(--surface-3)",
         },
         copper: {
-          DEFAULT: "#c8956c",
-          light: "#daa77a",
-          dark: "#a67952",
-          muted: "#c8956c40",
-          faint: "#c8956c15",
-        },
-        slate: {
-          750: "#27272e",
+          DEFAULT: "var(--copper)",
+          light: "var(--copper-light)",
+          dark: "var(--copper-dark)",
+          muted: "var(--copper-muted)",
+          faint: "var(--copper-faint)",
         },
         warm: {
-          red: "#b45555",
-          "red-deep": "#8b4040",
-          amber: "#b8944a",
+          red: "var(--warm-red)",
+          amber: "var(--warm-amber)",
+        },
+        slate: {
+          750: "var(--border-subtle)",
         },
       },
       fontFamily: {
-        serif: ['"IBM Plex Serif"', "Georgia", "serif"],
-        mono: ['"IBM Plex Mono"', "Menlo", "monospace"],
-        sans: ['"IBM Plex Sans"', "system-ui", "sans-serif"],
+        serif: ["var(--font-plex-serif)", "Georgia", "serif"],
+        mono: ["var(--font-plex-mono)", "Menlo", "monospace"],
+        sans: ["var(--font-plex-sans)", "system-ui", "sans-serif"],
       },
       animation: {
         "fade-up": "fadeUp 0.5s ease-out both",

@@ -1,18 +1,16 @@
 import type {
   BalanceCard,
+  CreditsInfo,
   SeatStatusResponse,
   CodexUsageApiResponse,
+  UsageWindow,
 } from "@/types/seat";
 
 function formatResetAt(unixSeconds: number): string {
-  const d = new Date(unixSeconds * 1000);
-  return d.toISOString();
+  return new Date(unixSeconds * 1000).toISOString();
 }
 
-function windowToBalanceCard(
-  window: { used_percent: number; reset_at: number },
-  label: string
-): BalanceCard {
+function windowToBalanceCard(window: UsageWindow, label: string): BalanceCard {
   const remainingPercent = Math.max(0, Math.min(100, 100 - window.used_percent));
   return {
     label,
@@ -29,19 +27,13 @@ export function mapCodexUsageToStatusResponse(
 
   const fiveHourUsageLimit: BalanceCard = primary
     ? windowToBalanceCard(primary, "5 hour usage limit")
-    : {
-        label: "5 hour usage limit",
-        remainingPercent: 100,
-      };
+    : { label: "5 hour usage limit", remainingPercent: 100 };
 
   const weeklyUsageLimit: BalanceCard = secondary
     ? windowToBalanceCard(secondary, "Weekly usage limit")
-    : {
-        label: "Weekly usage limit",
-        remainingPercent: 100,
-      };
+    : { label: "Weekly usage limit", remainingPercent: 100 };
 
-  const credits = data.credits
+  const credits: CreditsInfo | undefined = data.credits
     ? {
         hasCredits: data.credits.has_credits,
         unlimited: data.credits.unlimited,

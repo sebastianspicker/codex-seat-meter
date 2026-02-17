@@ -1,83 +1,139 @@
-/**
- * Auth JSON structure (per-seat file from config directory).
- */
+// ---------------------------------------------------------------------------
+// Auth JSON (per-seat file from config directory)
+// ---------------------------------------------------------------------------
+
 export interface AuthTokens {
-  id_token?: string;
-  access_token: string;
-  refresh_token?: string;
-  account_id?: string;
+  readonly id_token?: string;
+  readonly access_token: string;
+  readonly refresh_token?: string;
+  readonly account_id?: string;
 }
 
 export interface AuthJson {
-  auth_mode?: string;
-  OPENAI_API_KEY?: string | null;
-  tokens?: AuthTokens;
-  last_refresh?: string;
+  readonly auth_mode?: string;
+  readonly OPENAI_API_KEY?: string | null;
+  readonly tokens?: AuthTokens;
+  readonly last_refresh?: string;
 }
 
-/**
- * One balance card (5h limit, weekly limit, or code review).
- */
+// ---------------------------------------------------------------------------
+// Balance card (UI model)
+// ---------------------------------------------------------------------------
+
 export interface BalanceCard {
-  label: string;
-  remainingPercent: number;
-  resetAt?: string;
+  readonly label: string;
+  readonly remainingPercent: number;
+  readonly resetAt?: string;
 }
 
-/**
- * Success response from GET /api/seats/[id]/status
- */
+// ---------------------------------------------------------------------------
+// Credits snapshot
+// ---------------------------------------------------------------------------
+
+export interface CreditsInfo {
+  readonly hasCredits: boolean;
+  readonly unlimited: boolean;
+  readonly balance?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Status response (discriminated union on `ok`)
+// ---------------------------------------------------------------------------
+
 export interface SeatStatusResponse {
-  ok: true;
-  balance: {
-    fiveHourUsageLimit: BalanceCard;
-    weeklyUsageLimit: BalanceCard;
-    codeReview?: BalanceCard | null;
+  readonly ok: true;
+  readonly balance: {
+    readonly fiveHourUsageLimit: BalanceCard;
+    readonly weeklyUsageLimit: BalanceCard;
+    readonly codeReview?: BalanceCard | null;
   };
-  planType?: string;
-  credits?: { hasCredits: boolean; unlimited: boolean; balance?: number };
+  readonly planType?: string;
+  readonly credits?: CreditsInfo;
 }
 
-/**
- * Error response from GET /api/seats/[id]/status
- */
 export interface SeatStatusError {
-  ok: false;
-  error: string;
+  readonly ok: false;
+  readonly error: string;
 }
 
 export type SeatStatusResult = SeatStatusResponse | SeatStatusError;
 
-/**
- * Seat list item (safe fields only, no tokens).
- */
+// ---------------------------------------------------------------------------
+// Seat list item (safe fields only, no tokens)
+// ---------------------------------------------------------------------------
+
 export interface SeatMeta {
-  id: string;
-  auth_mode?: string;
-  last_refresh?: string;
-  error?: string;
+  readonly id: string;
+  readonly auth_mode?: string;
+  readonly last_refresh?: string;
+  readonly error?: string;
 }
 
-/**
- * Codex wham/usage API response (external).
- */
+// ---------------------------------------------------------------------------
+// Codex wham/usage API response (external, snake_case)
+// ---------------------------------------------------------------------------
+
+export interface UsageWindow {
+  readonly used_percent: number;
+  readonly reset_at: number;
+  readonly limit_window_seconds: number;
+}
+
 export interface CodexUsageApiResponse {
-  plan_type?: string;
-  rate_limit?: {
-    primary_window?: {
-      used_percent: number;
-      reset_at: number;
-      limit_window_seconds: number;
-    };
-    secondary_window?: {
-      used_percent: number;
-      reset_at: number;
-      limit_window_seconds: number;
-    };
+  readonly plan_type?: string;
+  readonly rate_limit?: {
+    readonly primary_window?: UsageWindow;
+    readonly secondary_window?: UsageWindow;
   };
-  credits?: {
-    has_credits: boolean;
-    unlimited: boolean;
-    balance?: number;
+  readonly credits?: {
+    readonly has_credits: boolean;
+    readonly unlimited: boolean;
+    readonly balance?: number;
   };
+}
+
+// ---------------------------------------------------------------------------
+// Runtime type guards
+// ---------------------------------------------------------------------------
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Validate that a parsed JSON value conforms to AuthJson shape. */
+export function isAuthJson(value: unknown): value is AuthJson {
+  if (!isRecord(value)) return false;
+  if ("tokens" in value && value.tokens != null) {
+    if (!isRecord(value.tokens)) return false;
+    if (typeof value.tokens.access_token !== "string") return false;
+  }
+  return true;
+}
+
+/** Validate that a parsed API response looks like a CodexUsageApiResponse. */
+export function isCodexUsageApiResponse(
+  value: unknown
+): value is CodexUsageApiResponse {
+  if (!isRecord(value)) return false;
+  if ("rate_limit" in value && value.rate_limit != null) {
+    if (!isRecord(value.rate_limit)) return false;
+  }
+  return true;
+}
+
+/** Narrow a discriminated union response to success. */
+export function isSeatStatusOk(
+  value: unknown
+): value is SeatStatusResponse {
+  return isRecord(value) && value.ok === true && isRecord(value.balance);
+}
+
+/** Validate that a value is SeatMeta[]. */
+export function isSeatMetaArray(value: unknown): value is SeatMeta[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) => isRecord(item) && typeof item.id === "string"
+    )
+  );
 }

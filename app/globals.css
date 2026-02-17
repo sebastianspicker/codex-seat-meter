@@ -2,40 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Serif:wght@400;500;600&display=swap");
-
 @layer base {
   :root {
-    --copper: #c8956c;
-    --copper-light: #daa77a;
+    /* Surface palette */
     --surface-0: #09090b;
     --surface-1: #111114;
+    --surface-2: #18181c;
+    --surface-3: #1f1f24;
+
+    /* Copper accent */
+    --copper: #c8956c;
+    --copper-light: #daa77a;
+    --copper-dark: #a67952;
+    --copper-muted: rgb(200 149 108 / 0.25);
+    --copper-faint: rgb(200 149 108 / 0.08);
+
+    /* Status */
+    --warm-red: #b45555;
+    --warm-amber: #b8944a;
+
+    /* Text */
+    --text-primary: #e4e4e7;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --text-faint: #3f3f46;
+
+    /* Border */
+    --border-subtle: rgb(63 63 70 / 0.6);
+
+    /* Effects */
     --grain-opacity: 0.03;
   }
 
   ::selection {
-    background: #c8956c40;
+    background: var(--copper-muted);
     color: #fff;
   }
 
   body {
     background: var(--surface-0);
-    color: #d4d4d8;
-    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    color: var(--text-secondary);
+    font-family: var(--font-plex-sans), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Subtle grid-paper background */
+  /* Subtle radial vignette */
   body::before {
     content: "";
     position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background-image:
-      linear-gradient(#c8956c05 1px, transparent 1px),
-      linear-gradient(90deg, #c8956c05 1px, transparent 1px);
-    background-size: 48px 48px;
+    background: radial-gradient(ellipse at 50% 0%, var(--copper-faint) 0%, transparent 70%);
   }
 
   /* Film grain overlay */
@@ -48,29 +66,39 @@
     opacity: var(--grain-opacity);
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
+
+  /* Focus ring base */
+  *:focus-visible {
+    outline: 2px solid var(--copper);
+    outline-offset: 2px;
+  }
 }
 
 @layer components {
   .label-caps {
-    font-family: "IBM Plex Sans", system-ui, sans-serif;
+    font-family: var(--font-plex-sans), system-ui, sans-serif;
     font-size: 0.6875rem;
     font-weight: 500;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #71717a;
+    color: var(--text-muted);
   }
 
   .data-mono {
-    font-family: "IBM Plex Mono", monospace;
+    font-family: var(--font-plex-mono), monospace;
     font-variant-numeric: tabular-nums;
   }
 
   .copper-glow {
-    box-shadow: 0 0 0 1px #c8956c10, 0 1px 2px #c8956c08;
+    box-shadow:
+      0 0 0 1px rgb(200 149 108 / 0.06),
+      0 1px 2px rgb(200 149 108 / 0.03);
   }
 
   .copper-glow-hover:hover {
-    box-shadow: 0 0 0 1px #c8956c25, 0 2px 8px #c8956c12;
+    box-shadow:
+      0 0 0 1px rgb(200 149 108 / 0.15),
+      0 2px 8px rgb(200 149 108 / 0.07);
   }
 }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SeatCard } from "@/components/SeatCard";
+import { isSeatMetaArray } from "@/types/seat";
 import type { SeatMeta } from "@/types/seat";
 
 export default function Home() {
@@ -19,8 +20,11 @@ export default function Home() {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? `HTTP ${res.status}`);
       }
-      const data = await res.json();
-      setSeats(data as SeatMeta[]);
+      const data: unknown = await res.json();
+      if (!isSeatMetaArray(data)) {
+        throw new Error("Unexpected response format from /api/seats");
+      }
+      setSeats(data);
       setRefreshKey((k) => k + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load seats");
@@ -30,15 +34,24 @@ export default function Home() {
     }
   }, []);
 
+  const [timeStr, setTimeStr] = useState<string>("");
+
   useEffect(() => {
     fetchSeats();
   }, [fetchSeats]);
 
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  useEffect(() => {
+    const update = () =>
+      setTimeStr(
+        new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    update();
+    const interval = setInterval(update, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 lg:px-20">
@@ -60,7 +73,7 @@ export default function Home() {
                 type="button"
                 onClick={fetchSeats}
                 disabled={loading}
-                className="group relative overflow-hidden rounded-md border border-slate-750 bg-surface-2 px-4 py-2 text-xs font-medium tracking-wide text-zinc-400 transition-all hover:border-copper-muted hover:text-copper-light disabled:opacity-40"
+                className="group relative overflow-hidden rounded-md border border-slate-750 bg-surface-2 px-4 py-2 text-xs font-medium tracking-wide text-zinc-400 transition-[border-color,color] hover:border-copper-muted hover:text-copper-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 disabled:opacity-40"
               >
                 <span className="relative z-10">
                   {loading ? "Querying\u2026" : "Refresh all"}
@@ -78,7 +91,7 @@ export default function Home() {
             type="button"
             onClick={fetchSeats}
             disabled={loading}
-            className="w-full rounded-md border border-slate-750 bg-surface-2 px-4 py-2.5 text-xs font-medium text-zinc-400 transition-all hover:border-copper-muted hover:text-copper-light disabled:opacity-40"
+            className="w-full rounded-md border border-slate-750 bg-surface-2 px-4 py-2.5 text-xs font-medium text-zinc-400 transition-[border-color,color] hover:border-copper-muted hover:text-copper-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 disabled:opacity-40"
           >
             {loading ? "Querying\u2026" : "Refresh all seats"}
           </button>
