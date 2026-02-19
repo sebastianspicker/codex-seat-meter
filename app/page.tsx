@@ -2,14 +2,21 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { SeatCard } from "@/components/SeatCard";
+import { LoadingDots } from "@/components/LoadingDots";
+import { EmptyState } from "@/components/EmptyState";
 import { isSeatMetaArray } from "@/types/seat";
 import type { SeatMeta } from "@/types/seat";
+import { getErrorMessage } from "@/lib/errors";
+import { formatTime } from "@/lib/format";
+
+const AUTO_REFRESH_INTERVAL_MS = 60_000;
 
 export default function Home() {
   const [seats, setSeats] = useState<SeatMeta[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   const fetchSeats = useCallback(async () => {
     setLoading(true);
@@ -27,7 +34,7 @@ export default function Home() {
       setSeats(data);
       setRefreshKey((k) => k + 1);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load seats");
+      setError(getErrorMessage(err, "Failed to load seats"));
       setSeats(null);
     } finally {
       setLoading(false);
@@ -41,17 +48,17 @@ export default function Home() {
   }, [fetchSeats]);
 
   useEffect(() => {
-    const update = () =>
-      setTimeStr(
-        new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      );
+    const update = () => setTimeStr(formatTime(new Date()));
     update();
     const interval = setInterval(update, 30_000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!autoRefresh || !seats?.length) return;
+    const id = setInterval(fetchSeats, AUTO_REFRESH_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [autoRefresh, seats?.length, fetchSeats]);
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 lg:px-20">
@@ -69,11 +76,23 @@ export default function Home() {
             </div>
             <div className="hidden items-end gap-6 sm:flex">
               <span className="data-mono text-xs text-zinc-600">{timeStr}</span>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={autoRefresh}
+                  onChange={(e) => setAutoRefresh(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-zinc-600 bg-surface-2 text-copper focus-visible:ring-copper/50"
+                />
+                <span className="data-mono text-[0.625rem] text-zinc-600">
+                  Auto (60s)
+                </span>
+              </label>
               <button
                 type="button"
                 onClick={fetchSeats}
                 disabled={loading}
-                className="group relative overflow-hidden rounded-md border border-slate-750 bg-surface-2 px-4 py-2 text-xs font-medium tracking-wide text-zinc-400 transition-[border-color,color] hover:border-copper-muted hover:text-copper-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 disabled:opacity-40"
+                className="btn-secondary group relative overflow-hidden px-4 tracking-wide"
+                aria-label="Refresh all seats"
               >
                 <span className="relative z-10">
                   {loading ? "Querying\u2026" : "Refresh all"}
@@ -86,15 +105,27 @@ export default function Home() {
         </header>
 
         {/* Mobile refresh */}
-        <div className="mb-6 sm:hidden">
+        <div className="mb-6 flex flex-col gap-3 sm:hidden">
           <button
             type="button"
             onClick={fetchSeats}
             disabled={loading}
-            className="w-full rounded-md border border-slate-750 bg-surface-2 px-4 py-2.5 text-xs font-medium text-zinc-400 transition-[border-color,color] hover:border-copper-muted hover:text-copper-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-0 disabled:opacity-40"
+            className="btn-secondary w-full py-2.5"
+            aria-label="Refresh all seats"
           >
             {loading ? "Querying\u2026" : "Refresh all seats"}
           </button>
+          <label className="flex cursor-pointer items-center justify-center gap-2">
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(e) => setAutoRefresh(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-600 bg-surface-2 text-copper focus-visible:ring-copper/50"
+            />
+            <span className="data-mono text-xs text-zinc-600">
+              Auto-refresh every 60s
+            </span>
+          </label>
         </div>
 
         {/* Error */}
@@ -107,25 +138,23 @@ export default function Home() {
 
         {/* Content */}
         {loading && !seats ? (
-          <div className="flex items-center gap-3 py-20">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse-slow rounded-full bg-copper" />
-            <p className="data-mono text-sm text-zinc-600">
-              Establishing connection&hellip;
-            </p>
-          </div>
+          <LoadingDots
+            message="Establishing connection&hellip;"
+            className="py-20"
+          />
         ) : seats && seats.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-750 bg-surface-1 px-8 py-16 text-center">
-            <p className="data-mono text-sm text-zinc-500">
-              No seats detected
-            </p>
-            <p className="mt-2 text-xs text-zinc-600">
-              Set{" "}
-              <code className="rounded bg-surface-3 px-1.5 py-0.5 font-mono text-copper-dark">
-                SEATS_DIRECTORY
-              </code>{" "}
-              to a folder containing auth JSON files.
-            </p>
-          </div>
+          <EmptyState
+            title="No seats detected"
+            description={
+              <>
+                Set{" "}
+                <code className="rounded bg-surface-3 px-1.5 py-0.5 font-mono text-copper-dark">
+                  SEATS_DIRECTORY
+                </code>{" "}
+                to a folder containing auth JSON files.
+              </>
+            }
+          />
         ) : (
           <div className="flex flex-col gap-5">
             {seats?.map((seat, i) => (

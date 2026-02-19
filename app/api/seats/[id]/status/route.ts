@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSeatsDirectory, getCodexUsageUrl } from "@/lib/config";
 import { loadSeatAuth } from "@/lib/seats";
 import { mapCodexUsageToStatusResponse } from "@/lib/usage-mapper";
+import { fetchUsage } from "@/lib/usage-client";
 import { checkDashboardAuth } from "@/lib/auth";
+import { getErrorMessage } from "@/lib/errors";
 import { isCodexUsageApiResponse } from "@/types/seat";
 import type { SeatStatusError } from "@/types/seat";
 
@@ -45,61 +47,25 @@ export async function GET(
       );
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to load auth";
     return NextResponse.json<SeatStatusError>(
-      { ok: false, error: message },
+      { ok: false, error: getErrorMessage(err, "Failed to load auth") },
       { status: 404 }
     );
   }
 
   const url = getCodexUsageUrl();
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-    "User-Agent": "CodexSeatMeter",
-    Accept: "application/json",
-  };
-  if (accountId) {
-    headers["ChatGPT-Account-Id"] = accountId;
-  }
+  const result = await fetchUsage(accessToken, accountId, url);
 
-  let res: Response;
-  try {
-    res = await fetch(url, { method: "GET", headers, cache: "no-store" });
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Network error";
+  if (!result.ok) {
     return NextResponse.json<SeatStatusError>(
-      { ok: false, error: message },
-      { status: 502 }
-    );
-  }
-
-  let text: string;
-  try {
-    text = await res.text();
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to read response body";
-    return NextResponse.json<SeatStatusError>(
-      { ok: false, error: message },
-      { status: 502 }
-    );
-  }
-
-  if (!res.ok) {
-    return NextResponse.json<SeatStatusError>(
-      {
-        ok: false,
-        error: res.status === 401 || res.status === 403
-          ? "Token expired or invalid"
-          : `API error ${res.status}: ${text.slice(0, 200)}`,
-      },
-      { status: res.status === 401 || res.status === 403 ? 401 : 502 }
+      { ok: false, error: result.error },
+      { status: result.status === 401 || result.status === 403 ? 401 : 502 }
     );
   }
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    parsed = JSON.parse(result.text);
   } catch {
     return NextResponse.json<SeatStatusError>(
       { ok: false, error: "Invalid JSON from usage API" },

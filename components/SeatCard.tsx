@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { BalanceCardView } from "./BalanceCard";
+import { LoadingDots } from "./LoadingDots";
 import { isSeatStatusOk } from "@/types/seat";
 import type { SeatMeta, SeatStatusResponse, SeatStatusError } from "@/types/seat";
+import { getErrorMessage } from "@/lib/errors";
+import { formatDateTime } from "@/lib/format";
 
 interface Props {
   seat: SeatMeta;
@@ -46,7 +49,7 @@ export function SeatCard({ seat, refreshKey, index }: Props) {
         state: "error",
         data: {
           ok: false,
-          error: err instanceof Error ? err.message : "Request failed",
+          error: getErrorMessage(err, "Request failed"),
         },
       });
     }
@@ -59,12 +62,7 @@ export function SeatCard({ seat, refreshKey, index }: Props) {
   }, [fetchStatus, refreshKey, seat.error]);
 
   const lastRefreshFormatted = seat.last_refresh
-    ? new Date(seat.last_refresh).toLocaleString([], {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+    ? formatDateTime(seat.last_refresh)
     : "\u2014";
 
   const hasFileError = !!seat.error;
@@ -75,12 +73,16 @@ export function SeatCard({ seat, refreshKey, index }: Props) {
     <section
       className="animate-fade-up copper-glow copper-glow-hover group rounded-xl border border-zinc-800/60 bg-surface-1 transition-[border-color,box-shadow]"
       style={{ animationDelay: `${baseDelay}ms` }}
+      aria-busy={isLoading}
+      aria-live="polite"
+      aria-label={`Seat ${seat.id} usage status`}
     >
       {/* Seat header */}
       <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
         <div className="flex items-center gap-3">
           {/* Status dot */}
           <span
+            aria-hidden
             className={`mt-0.5 inline-block h-2 w-2 rounded-full ${
               hasFileError
                 ? "bg-warm-red"
@@ -127,7 +129,8 @@ export function SeatCard({ seat, refreshKey, index }: Props) {
               type="button"
               onClick={fetchStatus}
               disabled={status.state === "loading"}
-              className="rounded border border-zinc-800 bg-surface-2 px-3 py-1 text-[0.625rem] font-medium uppercase tracking-wider text-zinc-500 transition-[border-color,color] hover:border-copper/30 hover:text-copper-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-copper/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1 disabled:opacity-30"
+              className="btn-secondary px-3 py-1 text-[0.625rem] text-zinc-500 hover:text-copper-dark focus-visible:ring-offset-surface-1 disabled:opacity-30"
+              aria-label={`Refresh usage for ${seat.id}`}
             >
               {status.state === "loading" ? "\u2026" : "Refresh"}
             </button>
@@ -146,12 +149,11 @@ export function SeatCard({ seat, refreshKey, index }: Props) {
             <p className="data-mono text-xs text-warm-red/70">{seat.error}</p>
           </div>
         ) : isLoading ? (
-          <div className="flex items-center gap-2 py-4">
-            <span className="inline-block h-1 w-1 animate-pulse-slow rounded-full bg-copper/40" />
-            <p className="data-mono text-xs text-zinc-600">
-              Fetching usage data&hellip;
-            </p>
-          </div>
+          <LoadingDots
+            message="Fetching usage data&hellip;"
+            size="sm"
+            className="py-4"
+          />
         ) : status.state === "error" ? (
           <div className="rounded-md border border-warm-red/15 bg-warm-red/5 px-4 py-3">
             <p className="label-caps mb-1 text-warm-red">API Error</p>

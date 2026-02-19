@@ -1,6 +1,7 @@
 "use client";
 
 import type { BalanceCard as BalanceCardType } from "@/types/seat";
+import { formatDateTime } from "@/lib/format";
 
 interface Props {
   card: BalanceCardType;
@@ -33,12 +34,7 @@ export function BalanceCardView({ card, delay = 0 }: Props) {
         <p className="label-caps">{card.label}</p>
         {card.resetAt && (
           <p className="data-mono whitespace-nowrap text-[0.625rem] text-zinc-600">
-            resets {new Date(card.resetAt).toLocaleString([], {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+            resets {formatDateTime(card.resetAt)}
           </p>
         )}
       </div>

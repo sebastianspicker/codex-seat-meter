@@ -160,6 +160,7 @@ Fetches live balance from the upstream usage API for a single seat.
 - **Optional API auth.** Set `DASHBOARD_SECRET` in `.env`. When set, every request must include either:
   - Header: `x-dashboard-secret: <value>`
   - Query param: `?secret=<value>`
+  If you protect the dashboard with a secret, the browser must send it with each request (e.g. via a reverse proxy that adds the header, or by using a client-side secret only for local dev).
 - **Secrets excluded from git.** `.env`, `.env.local`, and `config/` are in `.gitignore`.
 
 ## Project Structure
@@ -183,11 +184,12 @@ codex-seat-meter/
     config.ts                     Env reading (SEATS_DIRECTORY, usage URL)
     seats.ts                      Filesystem access (list, load, path guard)
     usage-mapper.ts               wham/usage JSON -> BalanceCard mapping
+    usage-client.ts               Upstream usage API fetch + retry
     auth.ts                       DASHBOARD_SECRET middleware
+    errors.ts                     getErrorMessage helper
+    format.ts                     Date/time formatting
   types/
     seat.ts                       All shared TypeScript interfaces
-  docs/
-    PRD.md                        Product requirements document
 ```
 
 ## Data Flow Summary
@@ -214,6 +216,10 @@ flowchart LR
 2. **No automatic token refresh.** Expired tokens result in 401 errors. Re-run `codex` CLI to refresh tokens.
 3. **Undocumented API.** The `wham/usage` endpoint is not officially documented by OpenAI and may change without notice. Based on reverse engineering from the [CodexBar](https://github.com/) project.
 4. **No historical data.** The dashboard shows point-in-time snapshots only.
+
+## Future work
+
+Possible extensions (not yet implemented): configurable auto-refresh (polling), retry on transient API errors (502/503/429), optional token refresh via OAuth, history/trends with local persistence.
 
 ## Tech Stack
 

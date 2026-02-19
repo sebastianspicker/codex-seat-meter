@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSeatsDirectory } from "@/lib/config";
 import { listSeats } from "@/lib/seats";
 import { checkDashboardAuth } from "@/lib/auth";
+import { getErrorMessage } from "@/lib/errors";
 
 export async function GET(request: NextRequest) {
   const denied = checkDashboardAuth(request);
@@ -12,8 +13,9 @@ export async function GET(request: NextRequest) {
     const seats = await listSeats(seatsDirectory);
     return NextResponse.json(seats);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Failed to list seats";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: getErrorMessage(err, "Failed to list seats") },
+      { status: 500 }
+    );
   }
 }

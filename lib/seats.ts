@@ -3,6 +3,7 @@ import { constants } from "fs";
 import path from "path";
 import { isAuthJson } from "@/types/seat";
 import type { AuthJson, SeatMeta } from "@/types/seat";
+import { getErrorMessage } from "@/lib/errors";
 
 /**
  * Resolve seat id to absolute path of auth json (only within configured directory).
@@ -57,11 +58,10 @@ export async function listSeats(seatsDirectory: string): Promise<SeatMeta[]> {
         last_refresh: parsed.last_refresh,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Unknown error";
       console.error(`Failed to read seat ${id} from ${filePath}:`, err);
       results.push({
         id,
-        error: `Failed to parse: ${msg}`,
+        error: `Failed to parse: ${getErrorMessage(err, "Unknown error")}`,
       });
     }
   }
