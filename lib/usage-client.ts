@@ -38,56 +38,35 @@ export async function fetchUsage(
   url: string
 ): Promise<FetchUsageResult> {
   const headers = buildHeaders(accessToken, accountId);
-  let lastResult: FetchUsageResult | null = null;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    let res: Response;
     try {
-      res = await fetch(url, { method: "GET", headers, cache: "no-store" });
+      const res = await fetch(url, { method: "GET", headers, cache: "no-store" });
+      const text = await res.text();
+
+      if (res.ok) {
+        return { ok: true, text, status: res.status };
+      }
+
+      const status = res.status;
+      if (status === 401 || status === 403) {
+        return { ok: false, error: "Token expired or invalid", status };
+      }
+
+      if (RETRY_STATUSES.includes(status) && attempt < MAX_RETRIES) {
+        await delay(RETRY_DELAY_MS * (attempt + 1));
+        continue;
+      }
+
+      return { ok: false, error: `API error ${status}: ${text.slice(0, 200)}`, status };
     } catch (err) {
-      return {
-        ok: false,
-        error: getErrorMessage(err, "Network error"),
-        status: 502,
-      };
+      if (attempt < MAX_RETRIES) {
+        await delay(RETRY_DELAY_MS * (attempt + 1));
+        continue;
+      }
+      return { ok: false, error: getErrorMessage(err, "Network error"), status: 502 };
     }
-
-    let text: string;
-    try {
-      text = await res.text();
-    } catch (err) {
-      return {
-        ok: false,
-        error: getErrorMessage(err, "Failed to read response body"),
-        status: 502,
-      };
-    }
-
-    if (res.ok) {
-      return { ok: true, text, status: res.status };
-    }
-
-    const status = res.status;
-    const errorMessage =
-      status === 401 || status === 403
-        ? "Token expired or invalid"
-        : `API error ${status}: ${text.slice(0, 200)}`;
-
-    lastResult = { ok: false, error: errorMessage, status };
-
-    if (status === 401 || status === 403) {
-      return lastResult;
-    }
-
-    const shouldRetry =
-      RETRY_STATUSES.includes(status) && attempt < MAX_RETRIES;
-    if (shouldRetry) {
-      await delay(RETRY_DELAY_MS * (attempt + 1));
-      continue;
-    }
-
-    return lastResult;
   }
 
-  return lastResult!;
+  return { ok: false, error: "Max retries exceeded", status: 502 };
 }

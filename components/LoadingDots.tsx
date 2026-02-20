@@ -1,4 +1,5 @@
 "use client";
+import { Loader2 } from "lucide-react";
 
 interface Props {
   message?: string;
@@ -7,23 +8,23 @@ interface Props {
 }
 
 const sizeClasses = {
-  sm: "h-1 w-1",
-  md: "h-1.5 w-1.5",
+  sm: "h-3.5 w-3.5",
+  md: "h-5 w-5",
 };
 
 export function LoadingDots({ message, size = "md", className = "" }: Props) {
   return (
     <div
-      className={`flex items-center gap-3 ${className}`}
+      className={`flex items-center justify-center gap-3 text-zinc-500 ${className}`}
       role="status"
       aria-live="polite"
       aria-busy="true"
     >
-      <span
-        className={`inline-block animate-pulse-slow rounded-full bg-copper ${sizeClasses[size]}`}
+      <Loader2
+        className={`animate-spin text-copper ${sizeClasses[size]}`}
       />
       {message && (
-        <p className="data-mono text-sm text-zinc-600">{message}</p>
+        <p className="data-mono text-sm tracking-wide">{message}</p>
       )}
     </div>
   );
