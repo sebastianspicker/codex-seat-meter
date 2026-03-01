@@ -1,76 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { BalanceCardView } from "./BalanceCard";
 import { LoadingDots } from "./LoadingDots";
-import { isSeatStatusOk } from "@/types/seat";
-import type { SeatMeta, SeatStatusResponse, SeatStatusError } from "@/types/seat";
-import { getErrorMessage } from "@/lib/errors";
+import { AlertBanner } from "@/components/AlertBanner";
 import { formatDateTime } from "@/lib/format";
+import type { SeatMeta, StatusState } from "@/types/seat";
 import { RefreshCw, ServerCrash, AlertTriangle } from "lucide-react";
-
-export type StatusState =
-  | { state: "idle" }
-  | { state: "loading" }
-  | { state: "ok"; data: SeatStatusResponse }
-  | { state: "error"; data: SeatStatusError };
 
 interface Props {
   seat: SeatMeta;
-  refreshKey: number;
+  status: StatusState;
   index: number;
-  onStatusUpdate?: (id: string, status: StatusState) => void;
+  onRefresh: () => void;
 }
 
-export function SeatCard({ seat, refreshKey, index, onStatusUpdate }: Props) {
-  const [status, setStatus] = useState<StatusState>({ state: "idle" });
-
-  useEffect(() => {
-    if (onStatusUpdate) {
-      onStatusUpdate(seat.id, status);
-    }
-  }, [status, seat.id, onStatusUpdate]);
-
-  const fetchStatus = useCallback(async () => {
-    setStatus({ state: "loading" });
-    try {
-      const res = await fetch(
-        `/api/seats/${encodeURIComponent(seat.id)}/status`
-      );
-      const data: unknown = await res.json();
-      if (isSeatStatusOk(data)) {
-        setStatus({ state: "ok", data });
-      } else {
-        const record = data as Record<string, unknown> | null;
-        setStatus({
-          state: "error",
-          data: {
-            ok: false,
-            error:
-              typeof record?.error === "string"
-                ? record.error
-                : "Unknown error from API",
-          },
-        });
-      }
-    } catch (err) {
-      setStatus({
-        state: "error",
-        data: {
-          ok: false,
-          error: getErrorMessage(err, "Request failed"),
-        },
-      });
-    }
-  }, [seat.id]);
-
-  useEffect(() => {
-    if (!seat.error) {
-      fetchStatus();
-    }
-  }, [fetchStatus, refreshKey, seat.error]);
-
-  const hasFileError = !!seat.error;
+export function SeatCard({ seat, status, index, onRefresh }: Props) {
+  const hasFileError = Boolean(seat.error);
   const isLoading = status.state === "loading" || status.state === "idle";
   const baseDelay = index * 80;
 
@@ -87,7 +32,7 @@ export function SeatCard({ seat, refreshKey, index, onStatusUpdate }: Props) {
         status={status}
         hasFileError={hasFileError}
         isLoading={isLoading}
-        fetchStatus={fetchStatus}
+        onRefresh={onRefresh}
       />
       <div className="h-px w-full bg-gradient-to-r from-zinc-800/0 via-zinc-800/60 to-zinc-800/0" />
       <SeatCardBody
@@ -106,36 +51,33 @@ function SeatCardHeader({
   status,
   hasFileError,
   isLoading,
-  fetchStatus,
+  onRefresh,
 }: {
   seat: SeatMeta;
   status: StatusState;
   hasFileError: boolean;
   isLoading: boolean;
-  fetchStatus: () => void;
+  onRefresh: () => void;
 }) {
-  const lastRefreshFormatted = seat.last_refresh
-    ? formatDateTime(seat.last_refresh)
-    : "\u2014";
+  const lastRefreshFormatted = seat.last_refresh ? formatDateTime(seat.last_refresh) : "\u2014";
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
       <div className="flex items-center gap-3">
         <span
           aria-hidden
-          className={`mt-0.5 inline-block h-2 w-2 rounded-full ring-2 ring-offset-2 ring-offset-surface-1/80 transition-colors ${hasFileError
-            ? "bg-warm-red ring-warm-red/20"
-            : isLoading
-              ? "animate-pulse-slow bg-zinc-500 ring-zinc-500/20"
-              : status.state === "error"
-                ? "bg-warm-red ring-warm-red/20"
-                : "bg-copper ring-copper/20"
-            }`}
+          className={`mt-0.5 inline-block h-2 w-2 rounded-full ring-2 ring-offset-2 ring-offset-surface-1/80 transition-colors ${
+            hasFileError
+              ? "bg-warm-red ring-warm-red/20"
+              : isLoading
+                ? "animate-pulse-slow bg-zinc-500 ring-zinc-500/20"
+                : status.state === "error"
+                  ? "bg-warm-red ring-warm-red/20"
+                  : "bg-copper ring-copper/20"
+          }`}
         />
         <div>
-          <h2 className="font-serif text-lg font-medium text-zinc-100 placeholder-glow">
-            {seat.id}
-          </h2>
+          <h2 className="font-serif text-lg font-medium text-zinc-100 placeholder-glow">{seat.id}</h2>
           <p className="data-mono mt-0.5 text-[0.625rem] tracking-wide text-zinc-500">
             {seat.auth_mode ?? "\u2014"} &middot; {lastRefreshFormatted}
           </p>
@@ -153,7 +95,8 @@ function SeatCardHeader({
           <span className="data-mono text-[0.625rem] tracking-wider text-zinc-500">
             {status.data.credits.unlimited
               ? "unlimited"
-              : status.data.credits.balance != null
+              : typeof status.data.credits.balance === "number" &&
+                  Number.isFinite(status.data.credits.balance)
                 ? `$${status.data.credits.balance.toFixed(2)}`
                 : status.data.credits.hasCredits
                   ? "credits"
@@ -164,7 +107,7 @@ function SeatCardHeader({
         {!hasFileError && (
           <button
             type="button"
-            onClick={fetchStatus}
+            onClick={onRefresh}
             disabled={isLoading}
             className="flex items-center gap-1.5 btn-secondary px-3 py-1 text-[0.625rem] text-zinc-400 hover:text-copper-light focus-visible:ring-offset-surface-1 disabled:opacity-30"
             aria-label={`Refresh usage for ${seat.id}`}
@@ -194,44 +137,21 @@ function SeatCardBody({
   return (
     <div className="px-6 py-5">
       {hasFileError ? (
-        <div className="flex items-start gap-3 rounded-md border border-warm-red/20 bg-warm-red/5 px-4 py-3 text-warm-red shadow-inner">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warm-red/80" />
-          <div>
-            <p className="label-caps mb-1">Parse Error</p>
-            <p className="data-mono text-xs text-warm-red/80">{seat.error}</p>
-          </div>
-        </div>
+        <AlertBanner icon={<AlertTriangle />} title="Parse Error" variant="compact">
+          <p className="data-mono text-xs">{seat.error}</p>
+        </AlertBanner>
       ) : isLoading ? (
-        <LoadingDots
-          message="Fetching usage data&hellip;"
-          size="sm"
-          className="py-4 opacity-70"
-        />
+        <LoadingDots message="Fetching usage data&hellip;" size="sm" className="py-4 opacity-70" />
       ) : status.state === "error" ? (
-        <div className="flex items-start gap-3 rounded-md border border-warm-red/20 bg-warm-red/5 px-4 py-3 text-warm-red shadow-inner">
-          <ServerCrash className="mt-0.5 h-4 w-4 shrink-0 text-warm-red/80" />
-          <div>
-            <p className="label-caps mb-1">API Error</p>
-            <p className="data-mono text-xs text-warm-red/80">
-              {status.data.error}
-            </p>
-          </div>
-        </div>
+        <AlertBanner icon={<ServerCrash />} title="API Error" variant="compact">
+          <p className="data-mono text-xs">{status.data.error}</p>
+        </AlertBanner>
       ) : status.state === "ok" ? (
         <div className="grid gap-4 md:grid-cols-2">
-          <BalanceCardView
-            card={status.data.balance.fiveHourUsageLimit}
-            delay={baseDelay + 100}
-          />
-          <BalanceCardView
-            card={status.data.balance.weeklyUsageLimit}
-            delay={baseDelay + 180}
-          />
+          <BalanceCardView card={status.data.balance.fiveHourUsageLimit} delay={baseDelay + 100} />
+          <BalanceCardView card={status.data.balance.weeklyUsageLimit} delay={baseDelay + 180} />
           {status.data.balance.codeReview && (
-            <BalanceCardView
-              card={status.data.balance.codeReview}
-              delay={baseDelay + 260}
-            />
+            <BalanceCardView card={status.data.balance.codeReview} delay={baseDelay + 260} />
           )}
         </div>
       ) : null}

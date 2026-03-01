@@ -20,8 +20,13 @@ function getTextColor(percent: number): string {
   return "text-copper-light group-hover:text-copper";
 }
 
+function clampPercent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
 export function BalanceCardView({ card, delay = 0 }: Props) {
-  const percent = Math.round(card.remainingPercent);
+  const percent = clampPercent(card.remainingPercent);
   const bgGradient = getBarGradient(percent);
   const numColor = getTextColor(percent);
 

@@ -13,13 +13,15 @@ const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 800;
 
 function buildHeaders(accessToken: string, accountId?: string): Record<string, string> {
+  const safeToken = accessToken.replace(/[\r\n]/g, "");
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
+    Authorization: `Bearer ${safeToken}`,
     "User-Agent": "CodexSeatMeter",
     Accept: "application/json",
   };
   if (accountId) {
-    headers["ChatGPT-Account-Id"] = accountId;
+    const safeAccountId = accountId.replace(/[\r\n]/g, "");
+    headers["ChatGPT-Account-Id"] = safeAccountId;
   }
   return headers;
 }
@@ -40,8 +42,18 @@ export async function fetchUsage(
   const headers = buildHeaders(accessToken, accountId);
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
-      const res = await fetch(url, { method: "GET", headers, cache: "no-store" });
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+      const res = await fetch(url, {
+        method: "GET",
+        headers,
+        cache: "no-store",
+        signal: controller.signal,
+      });
+
       const text = await res.text();
 
       if (res.ok) {
@@ -58,13 +70,19 @@ export async function fetchUsage(
         continue;
       }
 
-      return { ok: false, error: `API error ${status}: ${text.slice(0, 200)}`, status };
+      // Log detailed text locally for debugging, return generic error to client
+      console.error(`[fetchUsage] API error ${status} on try ${attempt}: ${text.slice(0, 500)}`);
+      return { ok: false, error: `Upstream API error ${status} (see server logs)`, status };
     } catch (err) {
       if (attempt < MAX_RETRIES) {
         await delay(RETRY_DELAY_MS * (attempt + 1));
         continue;
       }
       return { ok: false, error: getErrorMessage(err, "Network error"), status: 502 };
+    } finally {
+      if (timeoutId != null) {
+        clearTimeout(timeoutId);
+      }
     }
   }
 
