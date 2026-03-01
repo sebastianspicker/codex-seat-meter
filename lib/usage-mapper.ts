@@ -6,16 +6,22 @@ import type {
   UsageWindow,
 } from "@/types/seat";
 
-function formatResetAt(unixSeconds: number): string {
-  return new Date(unixSeconds * 1000).toISOString();
+/** Accept reset_at in seconds or milliseconds (values > 1e12 treated as ms). Returns ISO string or "—" if invalid. */
+function formatResetAt(resetAt: number): string {
+  if (!Number.isFinite(resetAt)) return "\u2014";
+  const ms = resetAt > 1e12 ? resetAt : resetAt * 1000;
+  const date = new Date(ms);
+  return Number.isNaN(date.getTime()) ? "\u2014" : date.toISOString();
 }
 
 function windowToBalanceCard(window: UsageWindow, label: string): BalanceCard {
-  const remainingPercent = Math.max(0, Math.min(100, 100 - window.used_percent));
+  const raw = 100 - (Number.isFinite(window.used_percent) ? window.used_percent : 0);
+  const remainingPercent = Math.max(0, Math.min(100, raw));
+  const resetAt = formatResetAt(window.reset_at);
   return {
     label,
     remainingPercent,
-    resetAt: formatResetAt(window.reset_at),
+    resetAt: resetAt === "\u2014" ? undefined : resetAt,
   };
 }
 
@@ -35,11 +41,17 @@ export function mapCodexUsageToStatusResponse(
 
   const credits: CreditsInfo | undefined = data.credits
     ? {
-        hasCredits: data.credits.has_credits,
-        unlimited: data.credits.unlimited,
-        balance: data.credits.balance,
+        hasCredits: Boolean(data.credits.has_credits),
+        unlimited: Boolean(data.credits.unlimited),
+        balance:
+          typeof data.credits.balance === "number" && Number.isFinite(data.credits.balance)
+            ? data.credits.balance
+            : undefined,
       }
     : undefined;
+
+  const planType =
+    typeof data.plan_type === "string" && data.plan_type.length > 0 ? data.plan_type : undefined;
 
   return {
     ok: true,
@@ -48,7 +60,7 @@ export function mapCodexUsageToStatusResponse(
       weeklyUsageLimit,
       codeReview: null,
     },
-    planType: data.plan_type,
+    planType,
     credits,
   };
 }

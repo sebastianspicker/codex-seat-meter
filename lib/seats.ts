@@ -1,15 +1,31 @@
 import { readdir, readFile, access } from "fs/promises";
 import { constants } from "fs";
 import path from "path";
-import { isAuthJson } from "@/types/seat";
+import { isAuthJson } from "@/lib/seat-guards";
 import type { AuthJson, SeatMeta } from "@/types/seat";
 import { getErrorMessage } from "@/lib/errors";
+
+/** Max length for a seat id (filename without extension) to avoid path length abuse. */
+const MAX_SEAT_ID_LENGTH = 200;
+const CONTROL_CHAR_RE = /[\u0000-\u001F\u007F]/;
+
+export function isSafeSeatId(seatId: string): boolean {
+  return Boolean(
+    seatId &&
+      seatId.length <= MAX_SEAT_ID_LENGTH &&
+      seatId === seatId.trim() &&
+      !CONTROL_CHAR_RE.test(seatId) &&
+      !seatId.includes("/") &&
+      !seatId.includes("\\") &&
+      !seatId.includes("..")
+  );
+}
 
 /**
  * Resolve seat id to absolute path of auth json (only within configured directory).
  */
 export function getSeatAuthPath(seatsDirectory: string, seatId: string): string {
-  if (!seatId || seatId.includes("/") || seatId.includes("\\") || seatId.includes("..") || seatId.includes("\0")) {
+  if (!isSafeSeatId(seatId)) {
     throw new Error("Invalid seat id");
   }
   const base = path.resolve(seatsDirectory);
@@ -41,6 +57,10 @@ export async function listSeats(seatsDirectory: string): Promise<SeatMeta[]> {
   for (const ent of entries) {
     if (!ent.isFile() || !ent.name.endsWith(".json")) continue;
     const id = ent.name.replace(/\.json$/i, "");
+    if (!isSafeSeatId(id)) {
+      results.push({ id, error: "Invalid seat id in filename" });
+      continue;
+    }
     const filePath = path.join(base, ent.name);
     try {
       const raw = await readFile(filePath, "utf-8");
@@ -52,10 +72,12 @@ export async function listSeats(seatsDirectory: string): Promise<SeatMeta[]> {
         });
         continue;
       }
+      const authMode = parsed.auth_mode;
+      const lastRefresh = parsed.last_refresh;
       results.push({
         id,
-        auth_mode: parsed.auth_mode,
-        last_refresh: parsed.last_refresh,
+        auth_mode: typeof authMode === "string" ? authMode : undefined,
+        last_refresh: typeof lastRefresh === "string" ? lastRefresh : undefined,
       });
     } catch (err) {
       console.error(`Failed to read seat ${id} from ${filePath}:`, err);

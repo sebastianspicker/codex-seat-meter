@@ -58,6 +58,12 @@ export interface SeatStatusError {
 
 export type SeatStatusResult = SeatStatusResponse | SeatStatusError;
 
+export type StatusState =
+  | { state: "idle" }
+  | { state: "loading" }
+  | { state: "ok"; data: SeatStatusResponse }
+  | { state: "error"; data: SeatStatusError };
+
 // ---------------------------------------------------------------------------
 // Seat list item (safe fields only, no tokens)
 // ---------------------------------------------------------------------------
@@ -67,6 +73,23 @@ export interface SeatMeta {
   readonly auth_mode?: string;
   readonly last_refresh?: string;
   readonly error?: string;
+}
+
+export interface SeatStatusesResponse {
+  readonly ok: true;
+  readonly fetchedAt: string;
+  readonly statuses: Record<string, SeatStatusResult>;
+}
+
+export type DashboardFilter = "all" | "healthy" | "file-error" | "api-error" | "low-limit";
+export type DashboardSort = "id" | "lowest-limit" | "highest-credits" | "error-first";
+
+export interface DashboardPreferences {
+  readonly autoRefresh: boolean;
+  readonly intervalMs: number;
+  readonly sort: DashboardSort;
+  readonly filter: DashboardFilter;
+  readonly query: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -90,50 +113,4 @@ export interface CodexUsageApiResponse {
     readonly unlimited: boolean;
     readonly balance?: number;
   };
-}
-
-// ---------------------------------------------------------------------------
-// Runtime type guards
-// ---------------------------------------------------------------------------
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/** Validate that a parsed JSON value conforms to AuthJson shape. */
-export function isAuthJson(value: unknown): value is AuthJson {
-  if (!isRecord(value)) return false;
-  if ("tokens" in value && value.tokens != null) {
-    if (!isRecord(value.tokens)) return false;
-    if (typeof value.tokens.access_token !== "string") return false;
-  }
-  return true;
-}
-
-/** Validate that a parsed API response looks like a CodexUsageApiResponse. */
-export function isCodexUsageApiResponse(
-  value: unknown
-): value is CodexUsageApiResponse {
-  if (!isRecord(value)) return false;
-  if ("rate_limit" in value && value.rate_limit != null) {
-    if (!isRecord(value.rate_limit)) return false;
-  }
-  return true;
-}
-
-/** Narrow a discriminated union response to success. */
-export function isSeatStatusOk(
-  value: unknown
-): value is SeatStatusResponse {
-  return isRecord(value) && value.ok === true && isRecord(value.balance);
-}
-
-/** Validate that a value is SeatMeta[]. */
-export function isSeatMetaArray(value: unknown): value is SeatMeta[] {
-  return (
-    Array.isArray(value) &&
-    value.every(
-      (item) => isRecord(item) && typeof item.id === "string"
-    )
-  );
 }

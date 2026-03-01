@@ -5,6 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Codex Seat Meter",
   description: "Multi-seat Codex usage monitoring dashboard",
+  referrer: "no-referrer",
 };
 
 export default function RootLayout({
