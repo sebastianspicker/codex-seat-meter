@@ -1,7 +1,7 @@
 {
   "name": "codex-seat-meter",
   "version": "0.2.0",
-  "private": false,
+  "private": true,
   "description": "Multi-seat Codex usage monitoring dashboard. Tracks 5h and weekly rate limits across multiple OpenAI Codex seats.",
   "license": "MIT",
   "keywords": [

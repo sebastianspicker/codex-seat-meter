@@ -12,9 +12,15 @@ next-env.d.ts
 
 # Env and config with secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 config/seats.config.json
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
 
 # Debug logs
 npm-debug.log*
