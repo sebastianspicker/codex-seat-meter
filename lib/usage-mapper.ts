@@ -1,3 +1,6 @@
+/**
+ * Maps the raw upstream wham/usage JSON into the app's BalanceCard UI model.
+ */
 import type {
   BalanceCard,
   CreditsInfo,
@@ -25,6 +28,10 @@ function windowToBalanceCard(window: UsageWindow, label: string): BalanceCard {
   };
 }
 
+/**
+ * Convert a raw {@link CodexUsageApiResponse} into the app's
+ * {@link SeatStatusResponse} shape ready for the client.
+ */
 export function mapCodexUsageToStatusResponse(
   data: CodexUsageApiResponse
 ): SeatStatusResponse {

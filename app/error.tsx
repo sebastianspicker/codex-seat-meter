@@ -1,5 +1,7 @@
 "use client";
 
+const isDev = process.env.NODE_ENV === "development";
+
 export default function Error({
   error,
   reset,
@@ -15,9 +17,11 @@ export default function Error({
           Something went wrong
         </h1>
         <p className="data-mono mt-3 text-sm text-zinc-500">
-          {error.message || "An unexpected error occurred."}
+          {isDev && error.message
+            ? error.message
+            : "An unexpected error occurred. Please try again."}
         </p>
-        {error.digest && (
+        {isDev && error.digest && (
           <p className="data-mono mt-1 text-xs text-zinc-700">
             Digest: {error.digest}
           </p>

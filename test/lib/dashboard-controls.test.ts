@@ -53,4 +53,76 @@ describe("filterAndSortSeats", () => {
 
     expect(result.map((seat) => seat.id)).toEqual(["beta", "alpha", "gamma"]);
   });
+
+  it("handles search with special regex characters as literal text", () => {
+    // The search uses string.includes() so regex special chars are treated literally
+    const specialSeats: SeatMeta[] = [
+      { id: "team.alpha" },
+      { id: "team*beta" },
+      { id: "team[gamma]" },
+      { id: "normal" },
+    ];
+
+    const emptyStatuses: Record<string, StatusState> = {};
+
+    // Searching for "." should only match the seat with a literal dot
+    const dotResult = filterAndSortSeats({
+      seats: specialSeats,
+      statuses: emptyStatuses,
+      filter: "all",
+      sort: "id",
+      query: ".",
+    });
+    expect(dotResult.map((s) => s.id)).toEqual(["team.alpha"]);
+
+    // Searching for "*" should only match the seat with a literal asterisk
+    const starResult = filterAndSortSeats({
+      seats: specialSeats,
+      statuses: emptyStatuses,
+      filter: "all",
+      sort: "id",
+      query: "*",
+    });
+    expect(starResult.map((s) => s.id)).toEqual(["team*beta"]);
+
+    // Searching for "[" should only match the seat with a literal bracket
+    const bracketResult = filterAndSortSeats({
+      seats: specialSeats,
+      statuses: emptyStatuses,
+      filter: "all",
+      sort: "id",
+      query: "[",
+    });
+    expect(bracketResult.map((s) => s.id)).toEqual(["team[gamma]"]);
+  });
+
+  it("returns empty array when filter yields no results", () => {
+    // "healthy" filter requires no error and state "ok"
+    const errorOnlySeats: SeatMeta[] = [
+      { id: "broken-1", error: "bad file" },
+      { id: "broken-2", error: "parse error" },
+    ];
+
+    const result = filterAndSortSeats({
+      seats: errorOnlySeats,
+      statuses: {},
+      filter: "healthy",
+      sort: "id",
+      query: "",
+    });
+
+    expect(result).toEqual([]);
+  });
+
+  it("returns empty array when text query matches nothing", () => {
+    const result = filterAndSortSeats({
+      seats,
+      statuses,
+      filter: "all",
+      sort: "id",
+      query: "nonexistent-seat-name",
+    });
+
+    expect(result).toEqual([]);
+  });
 });

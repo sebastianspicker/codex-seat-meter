@@ -1,12 +1,16 @@
+/**
+ * HTTP client for the upstream Codex wham/usage API.
+ * Includes retry logic for transient failures (429, 502, 503).
+ */
 import { getErrorMessage } from "@/lib/errors";
 
-export type FetchUsageSuccess = { ok: true; text: string; status: number };
-export type FetchUsageError = {
+type FetchUsageSuccess = { ok: true; text: string; status: number };
+type FetchUsageError = {
   ok: false;
   error: string;
   status: number;
 };
-export type FetchUsageResult = FetchUsageSuccess | FetchUsageError;
+type FetchUsageResult = FetchUsageSuccess | FetchUsageError;
 
 const RETRY_STATUSES = [429, 502, 503];
 const MAX_RETRIES = 2;
@@ -70,8 +74,8 @@ export async function fetchUsage(
         continue;
       }
 
-      // Log detailed text locally for debugging, return generic error to client
-      console.error(`[fetchUsage] API error ${status} on try ${attempt}: ${text.slice(0, 500)}`);
+      // Log only status/attempt — response body may contain sensitive data
+      console.error(`[fetchUsage] API error ${status} on attempt ${attempt}`);
       return { ok: false, error: `Upstream API error ${status} (see server logs)`, status };
     } catch (err) {
       if (attempt < MAX_RETRIES) {

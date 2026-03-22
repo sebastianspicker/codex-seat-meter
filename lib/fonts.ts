@@ -1,3 +1,7 @@
+/**
+ * Google Font definitions for IBM Plex (Sans, Mono, Serif).
+ * Exports CSS variable class names consumed by Tailwind and the root layout.
+ */
 import { IBM_Plex_Sans, IBM_Plex_Mono, IBM_Plex_Serif } from "next/font/google";
 
 export const plexSans = IBM_Plex_Sans({

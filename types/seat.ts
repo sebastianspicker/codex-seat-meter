@@ -2,7 +2,7 @@
 // Auth JSON (per-seat file from config directory)
 // ---------------------------------------------------------------------------
 
-export interface AuthTokens {
+interface AuthTokens {
   readonly id_token?: string;
   readonly access_token: string;
   readonly refresh_token?: string;

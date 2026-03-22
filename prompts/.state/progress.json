@@ -1,0 +1,11 @@
+{
+  "startedAt": "2026-03-22T00:00:00Z",
+  "currentPhase": null,
+  "phases": {
+    "1": { "status": "completed", "qualityGatePassed": true },
+    "2": { "status": "completed", "qualityGatePassed": true },
+    "3": { "status": "completed", "qualityGatePassed": true },
+    "4": { "status": "completed", "qualityGatePassed": true },
+    "5": { "status": "completed", "qualityGatePassed": true }
+  }
+}

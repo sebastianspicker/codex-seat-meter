@@ -1,3 +1,7 @@
+/**
+ * Filesystem access for seat auth files.
+ * Handles listing, loading, and path-traversal protection.
+ */
 import { readdir, readFile, access } from "fs/promises";
 import { constants } from "fs";
 import path from "path";
@@ -46,10 +50,8 @@ export async function listSeats(seatsDirectory: string): Promise<SeatMeta[]> {
   try {
     await access(base, constants.R_OK);
   } catch {
-    throw new Error(
-      `SEATS_DIRECTORY "${base}" does not exist or is not readable. ` +
-      `Create the directory and add auth JSON files, or update SEATS_DIRECTORY in .env.`
-    );
+    console.error("[seats] SEATS_DIRECTORY does not exist or is not readable");
+    throw new Error("Seats directory is not accessible");
   }
   const entries = await readdir(base, { withFileTypes: true });
   const results: SeatMeta[] = [];
@@ -79,11 +81,11 @@ export async function listSeats(seatsDirectory: string): Promise<SeatMeta[]> {
         auth_mode: typeof authMode === "string" ? authMode : undefined,
         last_refresh: typeof lastRefresh === "string" ? lastRefresh : undefined,
       });
-    } catch (err) {
-      console.error(`Failed to read seat ${id} from ${filePath}:`, err);
+    } catch (err: unknown) {
+      console.error(`[seats] Failed to read seat file: ${getErrorMessage(err, "Unknown error")}`);
       results.push({
         id,
-        error: `Failed to parse: ${getErrorMessage(err, "Unknown error")}`,
+        error: "Failed to read seat configuration",
       });
     }
   }
@@ -103,7 +105,7 @@ export async function loadSeatAuth(
   const raw = await readFile(filePath, "utf-8");
   const parsed: unknown = JSON.parse(raw);
   if (!isAuthJson(parsed)) {
-    throw new Error(`Invalid auth file format in ${seatId}.json`);
+    throw new Error("Invalid auth file format");
   }
   return parsed;
 }

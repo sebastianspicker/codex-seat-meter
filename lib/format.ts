@@ -1,3 +1,6 @@
+/**
+ * Date and time formatting helpers for the dashboard UI.
+ */
 const DATE_TIME_OPTIONS: Intl.DateTimeFormatOptions = {
   month: "short",
   day: "numeric",

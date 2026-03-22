@@ -43,4 +43,45 @@ describe("getSeatsDirectory", () => {
     process.env.SEATS_DIRECTORY = "relative/path";
     expect(() => getSeatsDirectory()).toThrow("must be an absolute path");
   });
+
+  it("returns path with trailing slash preserved", () => {
+    process.env.SEATS_DIRECTORY = "/tmp/seats/";
+    // getSeatsDirectory returns the trimmed value as-is; trailing slash is not stripped
+    expect(getSeatsDirectory()).toBe("/tmp/seats/");
+  });
+
+  it("returns path without trailing slash unchanged", () => {
+    process.env.SEATS_DIRECTORY = "/tmp/seats";
+    expect(getSeatsDirectory()).toBe("/tmp/seats");
+  });
+
+  it("throws when SEATS_DIRECTORY is not set", () => {
+    delete process.env.SEATS_DIRECTORY;
+    expect(() => getSeatsDirectory()).toThrow("is not set");
+  });
+
+  it("throws when SEATS_DIRECTORY is empty or whitespace", () => {
+    process.env.SEATS_DIRECTORY = "   ";
+    expect(() => getSeatsDirectory()).toThrow("is not set");
+  });
+});
+
+describe("getCodexUsageUrl edge cases", () => {
+  it("strips trailing slash from base URL", () => {
+    process.env.CODEX_USAGE_BASE_URL = "https://example.com/api/";
+    process.env.CODEX_USAGE_PATH = "usage";
+    expect(getCodexUsageUrl()).toBe("https://example.com/api/usage");
+  });
+
+  it("strips leading slash from path", () => {
+    process.env.CODEX_USAGE_BASE_URL = "https://example.com/api";
+    process.env.CODEX_USAGE_PATH = "/usage";
+    expect(getCodexUsageUrl()).toBe("https://example.com/api/usage");
+  });
+
+  it("handles both trailing and leading slashes", () => {
+    process.env.CODEX_USAGE_BASE_URL = "https://example.com/api/";
+    process.env.CODEX_USAGE_PATH = "/usage";
+    expect(getCodexUsageUrl()).toBe("https://example.com/api/usage");
+  });
 });

@@ -65,4 +65,56 @@ describe("computeDashboardStats", () => {
     const stats = computeDashboardStats(seats, statuses);
     expect(stats.minRateLimit).toBeNull();
   });
+
+  it("returns zero counts for an empty seat list", () => {
+    const stats = computeDashboardStats([], {});
+    expect(stats).toEqual({
+      activeSeats: 0,
+      totalErrors: 0,
+      totalCredits: 0,
+      minRateLimit: null,
+    });
+  });
+
+  it("counts all seats in error state correctly", () => {
+    const seats: SeatMeta[] = [
+      { id: "seat-1", error: "bad file" },
+      { id: "seat-2" },
+      { id: "seat-3" },
+    ];
+
+    const statuses: Record<string, StatusState> = {
+      "seat-1": {
+        state: "ok",
+        data: {
+          ok: true,
+          balance: {
+            fiveHourUsageLimit: { label: "5h", remainingPercent: 90 },
+            weeklyUsageLimit: { label: "week", remainingPercent: 80 },
+            codeReview: null,
+          },
+        },
+      },
+      "seat-2": { state: "error", data: { ok: false, error: "upstream" } },
+      "seat-3": { state: "error", data: { ok: false, error: "timeout" } },
+    };
+
+    const stats = computeDashboardStats(seats, statuses);
+    // seat-1 has file error so its status is ignored even though state is "ok"
+    // seat-2 and seat-3 are API errors (no file error)
+    expect(stats.activeSeats).toBe(0);
+    expect(stats.totalErrors).toBe(3); // 1 file error + 2 API errors
+    expect(stats.minRateLimit).toBeNull();
+  });
+
+  it("handles empty statuses object with seats", () => {
+    const seats: SeatMeta[] = [{ id: "a" }, { id: "b" }];
+    const statuses: Record<string, StatusState> = {};
+
+    const stats = computeDashboardStats(seats, statuses);
+    expect(stats.activeSeats).toBe(0);
+    expect(stats.totalErrors).toBe(0);
+    expect(stats.totalCredits).toBe(0);
+    expect(stats.minRateLimit).toBeNull();
+  });
 });

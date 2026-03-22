@@ -73,4 +73,32 @@ describe("GET /api/seats/statuses", () => {
     const response = await GET(req);
     expect(response.status).toBe(200);
   });
+
+  it("returns 400 when 0 seat IDs are provided (empty ids param)", async () => {
+    const { GET } = await import("@/app/api/seats/statuses/route");
+    const req = new NextRequest("http://localhost/api/seats/statuses?ids=");
+
+    const response = await GET(req);
+    expect(response.status).toBe(400);
+  });
+
+  it("accepts exactly 50 seat IDs (the max)", async () => {
+    const { GET } = await import("@/app/api/seats/statuses/route");
+    const ids = Array.from({ length: 50 }, (_, i) => `seat-${i}`).join(",");
+    const req = new NextRequest(`http://localhost/api/seats/statuses?ids=${ids}`);
+
+    const response = await GET(req);
+    expect(response.status).toBe(200);
+  });
+
+  it("returns 400 when 51 seat IDs are requested (one over max)", async () => {
+    const { GET } = await import("@/app/api/seats/statuses/route");
+    const ids = Array.from({ length: 51 }, (_, i) => `seat-${i}`).join(",");
+    const req = new NextRequest(`http://localhost/api/seats/statuses?ids=${ids}`);
+
+    const response = await GET(req);
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.error).toMatch(/too many/i);
+  });
 });

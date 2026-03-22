@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, type NextResponse } from "next/server";
 import { createHash, timingSafeEqual } from "crypto";
 import { allowDashboardSecretQueryParam, getDashboardSecret } from "./config";
 import { jsonNoStore } from "./api-response";

@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 import { checkDashboardAuth } from "@/lib/auth";
 import { fetchSeatStatus } from "@/lib/seat-status-service";
 import { jsonNoStore } from "@/lib/api-response";

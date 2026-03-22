@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 import { getSeatsDirectory, isDemoMode } from "@/lib/config";
 import { listSeats } from "@/lib/seats";
 import { MOCK_SEATS } from "@/lib/demo-data";
