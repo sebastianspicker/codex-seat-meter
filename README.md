@@ -96,6 +96,17 @@ npm run screenshots:readme
   - Header: `x-dashboard-secret: <secret>` (preferred)
   - Query: `?secret=<secret>` only in non-production by default, or when `ALLOW_DASHBOARD_SECRET_QUERY=1`.
 
+## Alternatives & Successors
+
+> This project is deprecated. Consider these actively maintained alternatives:
+
+| Project | Description | Link |
+|---------|-------------|------|
+| OpenAI Usage Dashboard | Built-in usage monitoring | [platform.openai.com/usage](https://platform.openai.com/usage) |
+| Helicone | Open-source LLM observability | [helicone.ai](https://helicone.ai) |
+| LangSmith | LangChain observability platform | [smith.langchain.com](https://smith.langchain.com) |
+| LiteLLM | Proxy with spend tracking across providers | [litellm.ai](https://litellm.ai) |
+
 ## Development
 
 ```bash
