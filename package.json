@@ -1,0 +1,56 @@
+{
+  "name": "codex-seat-meter",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Multi-seat Codex usage monitoring dashboard. Tracks 5h and weekly rate limits across multiple OpenAI Codex seats.",
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "openai",
+    "usage",
+    "monitoring",
+    "dashboard",
+    "seat-management"
+  ],
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "screenshots:readme": "node scripts/capture-readme-screenshots.mjs",
+    "check:readme-assets": "node scripts/check-readme-assets.mjs",
+    "check": "npm run check:readme-assets && npm run lint && npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "lucide-react": "^0.577.0",
+    "next": "^16.2.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitest/coverage-v8": "^4.0.0",
+    "eslint": "^9.16.0",
+    "eslint-config-next": "^16.2.1",
+    "jsdom": "^27.1.0",
+    "msw": "^2.11.6",
+    "playwright": "^1.58.2",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
