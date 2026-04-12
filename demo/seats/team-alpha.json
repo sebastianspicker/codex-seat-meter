@@ -1,0 +1,11 @@
+{
+  "auth_mode": "chatgpt",
+  "OPENAI_API_KEY": null,
+  "tokens": {
+    "id_token": "demo-id-token",
+    "access_token": "demo-access-token-team-alpha",
+    "refresh_token": "demo-refresh-token",
+    "account_id": "account-demo-team-alpha"
+  },
+  "last_refresh": "2026-02-28T09:45:00.000Z"
+}
